@@ -41,10 +41,10 @@ with tab1:
     plt.ylabel("Horsepower")
 
     plt.subplot(2, 2, 4)
-    plt.scatter(x["weight"], predictedy)
-    plt.xlabel("Weight")
+    plt.scatter(x["acceleration"], predictedy)
+    plt.xlabel("Acceleration")
     plt.ylabel("Horsepower")
-
+    plt.tight_layout()
     st.pyplot(plt.gcf())
 
     st.subheader("Horsepower Prediction")
