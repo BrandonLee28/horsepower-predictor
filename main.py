@@ -1,82 +1,49 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.linear_model import LinearRegression
 import pandas as pd
-from sklearn.metrics import mean_squared_error
 import streamlit as st
+import torch
+import torch.nn as nn
 
-tab1, tab2 = st.tabs(["Predict", "Data"])
 
-with tab1:
-    st.title("Brandon's Horsepower Predicter")
-    st.subheader("Correlation graphs")
+class LinearRegression(nn.Module):
+    def __init__(self, input, output):
+        super(LinearRegression, self).__init__()
+        self.lin = nn.Linear(input, output)
 
-    data = pd.read_csv("mpg.csv")
-    data = data.dropna()
+    def forward(self, x):
+        return self.lin(x)
 
-    x = data.drop(["horsepower", "name", "origin", "model_year"], axis=1)
-    y = data["horsepower"]
 
-    linModel = LinearRegression()
-    linModel.fit(x, y)
+# files
+data = pd.read_csv("salary.csv")
+data = data.dropna()
 
-    predictedy = linModel.predict(x)
+x = data["YearsExperience"].values.reshape(-1, 1)  # Reshape to a column vector
+y = data["Salary"].values.reshape(-1, 1)  # Reshape to a column vector
 
-    mse = mean_squared_error(y, predictedy)
-    print(f"Mean Squared Error on Test Set: {mse}")
 
-    plt.subplot(2, 2, 1)
-    plt.scatter(x["mpg"], predictedy)
-    plt.xlabel("Miles per Gallon")
-    plt.ylabel("Horsepower")
+x = torch.tensor(x, dtype=torch.float32)
+y = torch.tensor(y, dtype=torch.float32)
 
-    plt.subplot(2, 2, 2)
-    plt.scatter(x["weight"], predictedy)
-    plt.xlabel("Weight")
-    plt.ylabel("Horsepower")
+n_samples, n_features = x.shape
 
-    plt.subplot(2, 2, 3)
-    plt.scatter(x["displacement"], predictedy)
-    plt.xlabel("Displacement")
-    plt.ylabel("Horsepower")
+model = torch.load("salarypredict.pt")
+model.eval()
 
-    plt.subplot(2, 2, 4)
-    plt.scatter(x["acceleration"], predictedy)
-    plt.xlabel("Acceleration")
-    plt.ylabel("Horsepower")
-    plt.tight_layout()
-    st.pyplot(plt.gcf())
 
-    st.subheader("Horsepower Prediction")
-    mpg = st.number_input("Miles per Gallon")
-    cylinder = st.number_input("Cylinders")
-    displacement = st.number_input("Displacement")
-    weight = st.number_input("Weight")
-    acceleration = st.number_input("Acceleration")
+def predict(hours):
+    global salary_generated
+    global model
+    x_test = torch.tensor([[hours]], dtype=torch.float32)
+    salary_generated = model(x_test).item()
 
-    predicted_horsepower = st.session_state.get("predicted_horsepower", 0)
-    prediction_result = st.empty()
 
-    def predict():
-        global predicted_horsepower
-        st.session_state.clicked = True
-        new_data_point = {
-            "mpg": mpg,
-            "cylinders": cylinder,
-            "displacement": displacement,
-            "weight": weight,
-            "acceleration": acceleration,
-        }
-        query_data = pd.DataFrame([new_data_point])
-        predicted_horsepower = linModel.predict(query_data)
-        st.session_state["predicted_horsepower"] = predicted_horsepower
-        prediction_result.text(f"Predicted value: {predicted_horsepower[0]}")
+salary_generated = None
 
-    st.button("Predict", on_click=predict)
-
-    if st.session_state.get("clicked"):
-        prediction_result.text(f"Predicted value: {predicted_horsepower[0]}")
-
-with tab2:
-    st.subheader("Horespower Data")
-    st.dataframe(data)
+st.header("Brandon's Salary Predicter")
+st.subheader("Predict")
+hours = st.number_input("Enter Years of Experience", min_value=0)
+st.button("Generate", on_click=predict(hours))
+if salary_generated:
+    st.write(f"Predicted Salary: {salary_generated}")
+st.subheader("Data")
+st.dataframe(data)
