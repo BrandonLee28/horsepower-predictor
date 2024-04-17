@@ -1,1 +1,2 @@
-# horsepower-predictor
+# salary predictor
+
